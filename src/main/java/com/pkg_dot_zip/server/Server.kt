@@ -25,7 +25,8 @@ class Server {
             socket.receive(packet)
             val message = ReceivedMessage(packet)
 
-            val clientId = "${packet.address}:${packet.port}" // NOTE: We identify users by address, not username, although that is what the user sees.
+            val clientId =
+                "${packet.address}:${packet.port}" // NOTE: We identify users by address, not username, although that is what the user sees.
             logger.info { "Received message from $clientId: $message" }
 
             if (!clients.containsKey(clientId)) {
@@ -74,13 +75,22 @@ class Server {
     private fun broadcastMessage(message: String, senderId: String) {
         for ((id, client) in clients) {
             if (id != senderId && client.status != Status.OFFLINE) {
-                sendMessage(message, client.address, client.port)
+                socket.send(PacketCreator.createPacket(message, client.address, client.port))
             }
         }
     }
 
-    private fun sendMessage(message: String, address: InetAddress, port: Int) {
-        socket.send(PacketCreator.createPacket(message, address, port))
+    // TODO: Handle.
+
+    /**
+     * Pings all clients to see if they are still online. According to the assignments this needs to be checked on receiving any message on this server.
+     */
+    private fun checkIfUsersOffline() {
+        for ((_, client) in clients) {
+            if (client.status != Status.OFFLINE) {
+                socket.send(PacketCreator.createPacket("PING", client.address, client.port))
+            }
+        }
     }
 }
 
