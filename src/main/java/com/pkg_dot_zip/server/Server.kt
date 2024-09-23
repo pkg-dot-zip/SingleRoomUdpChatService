@@ -35,16 +35,6 @@ class Server {
             }
         }
 
-        // Handle commands or broadcast.
-        events.onReceive += { message: ReceivedMessage ->
-            if (message.isCommand()) {
-                handleCommand(message, message.clientId)
-            } else {
-                broadcastMessage("${message.getUsername()}: ${message.getContent()}", message.clientId)
-            }
-        }
-
-
         // Send acknowledgement.
         events.onReceive += { message: ReceivedMessage ->
             socket.send(
@@ -55,6 +45,18 @@ class Server {
                 )
             )
         }
+
+        // Fire proper event dependent on message type.
+        events.onReceive += { msg: ReceivedMessage ->
+            when {
+                msg.isCommand() -> events.onReceiveCommand.invoke { it.onReceiveMessage(msg) }
+                msg.isAcknowledgement() -> events.onReceiveAcknowledgement.invoke { it.onReceiveMessage(msg) }
+                msg.isMessage() -> events.onReceiveTextMessage.invoke { it.onReceiveMessage(msg) }
+            }
+        }
+
+        events.onReceiveCommand += ::handleCommand
+        events.onReceiveTextMessage += ::broadcastMessage
     }
 
     fun start() {
@@ -67,9 +69,7 @@ class Server {
         }
     }
 
-    private fun handleCommand(command: ReceivedMessage, clientId: String) {
-        return handleCommand(command.getContent(), clientId)
-    }
+    private fun handleCommand(command: ReceivedMessage) = handleCommand(command.getContent(), command.clientId)
 
     private fun handleCommand(command: String, clientId: String) {
         when (command) {
@@ -97,6 +97,9 @@ class Server {
             }
         }
     }
+
+    private fun broadcastMessage(msg: ReceivedMessage) =
+        broadcastMessage("${msg.getUsername()}: ${msg.getContent()}", msg.clientId)
 
     private fun broadcastMessage(message: String, senderId: String) {
         for ((id, client) in clients) {
