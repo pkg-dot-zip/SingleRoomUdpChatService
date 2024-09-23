@@ -3,19 +3,10 @@ package com.pkg_dot_zip.server
 import com.pkg_dot_zip.lib.Config
 import com.pkg_dot_zip.lib.PacketCreator
 import com.pkg_dot_zip.lib.ReceivedMessage
-import com.pkg_dot_zip.lib.Status
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.DatagramPacket
 import java.net.DatagramSocket
-import java.net.InetAddress
 import kotlin.time.Duration.Companion.minutes
-
-data class ClientInfo(
-    val address: InetAddress,
-    val port: Int,
-    var status: Status,
-    var lastMessageTime: Long = System.currentTimeMillis()
-)
 
 private val logger = KotlinLogging.logger {}
 

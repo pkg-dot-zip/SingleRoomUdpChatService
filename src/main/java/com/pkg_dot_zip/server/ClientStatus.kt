@@ -1,4 +1,4 @@
-package com.pkg_dot_zip.lib
+package com.pkg_dot_zip.server
 
 typealias Status = ClientStatus
 
