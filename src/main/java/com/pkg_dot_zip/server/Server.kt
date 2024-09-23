@@ -1,6 +1,8 @@
 package com.pkg_dot_zip.server
 
 import com.pkg_dot_zip.lib.Config
+import com.pkg_dot_zip.lib.PacketCreator
+import com.pkg_dot_zip.lib.ReceivedMessage
 import com.pkg_dot_zip.lib.Status
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.DatagramPacket
@@ -21,7 +23,7 @@ class Server {
         while (true) {
             val packet = DatagramPacket(buffer, buffer.size)
             socket.receive(packet)
-            val message = String(packet.data, 0, packet.length).trim()
+            val message = ReceivedMessage(packet)
 
             // Extract client's info (IP and port)
             val clientId = "${packet.address}:${packet.port}" // TODO: Retrieve username somehow.
@@ -31,12 +33,16 @@ class Server {
                 clients[clientId] = ClientInfo(packet.address, packet.port, Status.AVAILABLE)
             }
 
-            if (message.startsWith("/")) {
+            if (message.isCommand()) {
                 handleCommand(message, clientId)
             } else {
                 broadcastMessage("$clientId: $message", clientId)
             }
         }
+    }
+
+    private fun handleCommand(command: ReceivedMessage, clientId: String) {
+        return handleCommand(command.getString(), clientId)
     }
 
     private fun handleCommand(command: String, clientId: String) {
@@ -61,7 +67,7 @@ class Server {
             }
 
             else -> {
-                println("Unknown command from $clientId: $command")
+                logger.info { "Unknown command from $clientId: $command" }
             }
         }
     }
@@ -75,9 +81,7 @@ class Server {
     }
 
     private fun sendMessage(message: String, address: InetAddress, port: Int) {
-        val data = message.toByteArray()
-        val packet = DatagramPacket(data, data.size, address, port)
-        socket.send(packet)
+        socket.send(PacketCreator.createPacket(message, address, port))
     }
 }
 

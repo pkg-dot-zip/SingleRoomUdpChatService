@@ -1,6 +1,8 @@
 package com.pkg_dot_zip.client
 
 import com.pkg_dot_zip.lib.Config
+import com.pkg_dot_zip.lib.PacketCreator
+import com.pkg_dot_zip.lib.ReceivedMessage
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.DatagramPacket
 import java.net.DatagramSocket
@@ -24,7 +26,7 @@ class Client {
                 try {
                     val packet = DatagramPacket(buffer, buffer.size)
                     socket.receive(packet)
-                    val message = String(packet.data, 0, packet.length).trim()
+                    val message = ReceivedMessage(packet)
                     logger.info { "Received: $message" }
                 } catch (e: Exception) {
                     if (running) logger.error(e) { "Error receiving message: ${e.message}" }
@@ -48,8 +50,7 @@ class Client {
     }
 
     private fun sendMessage(message: String) {
-        val data = message.toByteArray()
-        val packet = DatagramPacket(data, data.size, Config.ADDRESS, Config.PORT)
+        val packet = PacketCreator.createPacket(message, Config.ADDRESS, Config.PORT)
         socket.send(packet)
         logger.info { "Sent: $message" }
 
