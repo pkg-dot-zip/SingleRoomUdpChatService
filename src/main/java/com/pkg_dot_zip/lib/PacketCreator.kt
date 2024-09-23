@@ -5,12 +5,17 @@ import java.net.InetAddress
 
 object PacketCreator {
     fun createMessagePacket(
+        packetID: Int,
         usernameOfSender: String,
         content: String,
         address: InetAddress,
         port: Int
     ): DatagramPacket {
-        return createPacket("$usernameOfSender: $content", address, port)
+        return createPacket("$packetID;$usernameOfSender: $content", address, port)
+    }
+
+    fun createAcknowledgementPacket(packetID: Int, address: InetAddress, port: Int): DatagramPacket {
+        return createPacket("ACK=$packetID", address, port)
     }
 
     fun createPacket(message: String, address: InetAddress, port: Int): DatagramPacket {

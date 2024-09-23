@@ -17,6 +17,8 @@ class Client {
     private var username = "user${(100..999).random()}"
     private val events = ClientEvents()
 
+    private var sentMessages = mutableListOf<Int>()
+
     @Volatile
     private var running = true
 
@@ -27,28 +29,41 @@ class Client {
         }
 
         events.onReceive += OnReceiveMessage(::println) // Regular console output so that it looks normal to the user.
+
+        // Handle acknowledgement.
+        events.onReceive += onReceive@{
+            if (!it.isAcknowledgement()) return@onReceive
+
+            // This means a packet was dropped! We sent 2 messages before any of them was acknowledged by the server.
+            if (sentMessages.size >= 2) {
+                logger.warn { "A packet was dropped containing message with id ${sentMessages.first()}" }
+                sentMessages.subList(0, sentMessages.size - 1).clear() // Remove all but the last entry.
+            }
+
+            if (sentMessages.first() == it.getID()) {
+                logger.info { "Acknowledged ${it.getID()}" }
+                sentMessages.removeFirst()
+            }
+        }
     }
 
-    fun start() {
-        registerEvents()
-        logger.info { "Client started. Type /available, /busy, /offline to change status." }
-
-        // Thread to listen for incoming messages.
+    // Thread to listen for incoming messages.
+    private fun receive() {
         thread {
             while (running) {
                 try {
                     val packet = DatagramPacket(buffer, buffer.size)
                     socket.receive(packet)
-
                     events.onReceive.invoke { it.onReceiveMessage(ReceivedMessage(packet)) }
-
                 } catch (e: Exception) {
                     if (running) logger.error(e) { "Error receiving message: ${e.message}" }
                 }
             }
         }
+    }
 
-        // Main thread to send messages
+    // Main thread to send messages
+    private fun send() {
         while (running) {
             val input = readlnOrNull()?.trim() ?: continue
 
@@ -61,16 +76,25 @@ class Client {
                 sendMessage(input)
             }
         }
+    }
+
+    fun start() {
+        registerEvents()
+        logger.info { "Client started. Type /available, /busy, /offline to change status." }
+
+        receive()
+        send()
 
         socket.close()
     }
 
     private fun sendMessage(content: String, username: String = this.username) {
-        val packet = PacketCreator.createMessagePacket(username, content, Config.ADDRESS, Config.PORT)
+        val id = (0..Integer.MAX_VALUE).random()
+        val packet = PacketCreator.createMessagePacket(id, username, content, Config.ADDRESS, Config.PORT)
         socket.send(packet)
         logger.info { "Sent: $content" }
 
-        // TODO: What if message gets lost? :(
+        sentMessages.add(id)
     }
 }
 

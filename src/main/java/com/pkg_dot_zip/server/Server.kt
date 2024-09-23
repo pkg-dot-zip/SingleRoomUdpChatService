@@ -23,22 +23,37 @@ class Server {
     private fun registerEvents() {
         logger.info { "Registering Events." }
 
+        // Log.
         events.onReceive += {
             logger.info { "Received message from ${it.clientId}: $it.message" }
         }
 
+        // Add to list of clients connected.
         events.onReceive += {
             if (!clients.containsKey(it.clientId)) {
                 clients[it.clientId] = ClientInfo(it.packet.address, it.packet.port, Status.AVAILABLE)
             }
         }
 
+        // Handle commands or broadcast.
         events.onReceive += { message: ReceivedMessage ->
             if (message.isCommand()) {
                 handleCommand(message, message.clientId)
             } else {
                 broadcastMessage("${message.getUsername()}: ${message.getContent()}", message.clientId)
             }
+        }
+
+
+        // Send acknowledgement.
+        events.onReceive += { message: ReceivedMessage ->
+            socket.send(
+                PacketCreator.createAcknowledgementPacket(
+                    message.getID(),
+                    message.getSenderAddress(),
+                    message.getSenderPort()
+                )
+            )
         }
     }
 
