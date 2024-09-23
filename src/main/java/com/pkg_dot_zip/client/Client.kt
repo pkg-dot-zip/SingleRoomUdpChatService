@@ -14,11 +14,22 @@ class Client {
     private val socket = DatagramSocket()
     private val buffer = ByteArray(Config.BUFFER_SIZE)
     private var username = "user${(100..999).random()}"
+    private val events = ClientEvents()
 
     @Volatile
     private var running = true
 
+    private fun registerEvents() {
+        logger.info { "Registering Events." }
+        events.onReceive += OnReceiveMessage {
+            logger.info { "Received: $it" }
+        }
+
+        events.onReceive += OnReceiveMessage(::println) // Regular console output so that it looks normal to the user.
+    }
+
     fun start() {
+        registerEvents()
         logger.info { "Client started. Type /available, /busy, /offline to change status." }
 
         // Thread to listen for incoming messages.
@@ -27,8 +38,9 @@ class Client {
                 try {
                     val packet = DatagramPacket(buffer, buffer.size)
                     socket.receive(packet)
-                    val message = ReceivedMessage(packet)
-                    logger.info { "Received: $message" }
+
+                    events.onReceive.invoke { it.onReceiveMessage(ReceivedMessage(packet)) }
+
                 } catch (e: Exception) {
                     if (running) logger.error(e) { "Error receiving message: ${e.message}" }
                 }
