@@ -2,11 +2,14 @@ package com.pkg_dot_zip.server
 
 import com.pkg_dot_zip.lib.Config
 import com.pkg_dot_zip.lib.Status
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
 
 data class ClientInfo(val address: InetAddress, val port: Int, var status: Status)
+
+private val logger = KotlinLogging.logger {}
 
 class Server {
     private val clients = mutableMapOf<String, ClientInfo>()
@@ -14,7 +17,7 @@ class Server {
     private val buffer = ByteArray(Config.BUFFER_SIZE)
 
     fun start() {
-        println("Server started...")
+        logger.info { "Server started..." }
         while (true) {
             val packet = DatagramPacket(buffer, buffer.size)
             socket.receive(packet)
@@ -22,7 +25,7 @@ class Server {
 
             // Extract client's info (IP and port)
             val clientId = "${packet.address}:${packet.port}" // TODO: Retrieve username somehow.
-            println("Received message from $clientId: $message")
+            logger.info { "Received message from $clientId: $message" }
 
             if (!clients.containsKey(clientId)) {
                 clients[clientId] = ClientInfo(packet.address, packet.port, Status.AVAILABLE)
@@ -40,20 +43,20 @@ class Server {
         when (command) {
             "/offline" -> {
                 clients[clientId]?.status = Status.OFFLINE
-                println("$clientId is now offline")
+                logger.info { "$clientId is now offline" }
                 clients.remove(clientId)
                 broadcastMessage("$clientId went offline", clientId)
             }
 
             "/available" -> {
                 clients[clientId]?.status = Status.AVAILABLE
-                println("$clientId is now available")
+                logger.info { "$clientId is now available" }
                 broadcastMessage("$clientId is available", clientId)
             }
 
             "/busy" -> {
                 clients[clientId]?.status = Status.BUSY
-                println("$clientId is now busy")
+                logger.info { "$clientId is now busy" }
                 broadcastMessage("$clientId is busy", clientId)
             }
 

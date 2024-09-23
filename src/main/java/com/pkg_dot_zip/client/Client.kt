@@ -1,9 +1,12 @@
 package com.pkg_dot_zip.client
 
 import com.pkg_dot_zip.lib.Config
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import kotlin.concurrent.thread
+
+private val logger = KotlinLogging.logger {}
 
 class Client {
     private val socket = DatagramSocket()
@@ -13,7 +16,7 @@ class Client {
     private var running = true
 
     fun start() {
-        println("Client started. Type /available, /busy, /offline to change status.")
+        logger.info { "Client started. Type /available, /busy, /offline to change status." }
 
         // Thread to listen for incoming messages.
         thread {
@@ -22,9 +25,9 @@ class Client {
                     val packet = DatagramPacket(buffer, buffer.size)
                     socket.receive(packet)
                     val message = String(packet.data, 0, packet.length).trim()
-                    println("Received: $message")
+                    logger.info { "Received: $message" }
                 } catch (e: Exception) {
-                    if (running) println("Error receiving message: ${e.message}")
+                    if (running) logger.error(e) { "Error receiving message: ${e.message}" }
                 }
             }
         }
@@ -48,7 +51,7 @@ class Client {
         val data = message.toByteArray()
         val packet = DatagramPacket(data, data.size, Config.ADDRESS, Config.PORT)
         socket.send(packet)
-        println("Sent: $message")
+        logger.info { "Sent: $message" }
 
         // TODO: What if message gets lost? :(
     }
