@@ -18,26 +18,37 @@ class Server {
     private val socket = DatagramSocket(Config.PORT)
     private val buffer = ByteArray(Config.BUFFER_SIZE)
 
+    private val events = ServerEvents()
+
+    private fun registerEvents() {
+        logger.info { "Registering Events." }
+
+        events.onReceive += {
+            logger.info { "Received message from ${it.clientId}: $it.message" }
+        }
+
+        events.onReceive += {
+            if (!clients.containsKey(it.clientId)) {
+                clients[it.clientId] = ClientInfo(it.packet.address, it.packet.port, Status.AVAILABLE)
+            }
+        }
+
+        events.onReceive += { message: ReceivedMessage ->
+            if (message.isCommand()) {
+                handleCommand(message, message.clientId)
+            } else {
+                broadcastMessage("${message.getUsername()}: ${message.getContent()}", message.clientId)
+            }
+        }
+    }
+
     fun start() {
+        registerEvents()
         logger.info { "Server started..." }
         while (true) {
             val packet = DatagramPacket(buffer, buffer.size)
             socket.receive(packet)
-            val message = ReceivedMessage(packet)
-
-            val clientId =
-                "${packet.address}:${packet.port}" // NOTE: We identify users by address, not username, although that is what the user sees.
-            logger.info { "Received message from $clientId: $message" }
-
-            if (!clients.containsKey(clientId)) {
-                clients[clientId] = ClientInfo(packet.address, packet.port, Status.AVAILABLE)
-            }
-
-            if (message.isCommand()) {
-                handleCommand(message, clientId)
-            } else {
-                broadcastMessage("$clientId: $message", clientId)
-            }
+            events.onReceive.invoke { it.onReceiveMessage(ReceivedMessage(packet)) }
         }
     }
 

@@ -3,6 +3,7 @@ package com.pkg_dot_zip.client
 import com.pkg_dot_zip.lib.Config
 import com.pkg_dot_zip.lib.PacketCreator
 import com.pkg_dot_zip.lib.ReceivedMessage
+import com.pkg_dot_zip.lib.events.OnReceiveMessage
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.DatagramPacket
 import java.net.DatagramSocket
@@ -21,7 +22,7 @@ class Client {
 
     private fun registerEvents() {
         logger.info { "Registering Events." }
-        events.onReceive += OnReceiveMessage {
+        events.onReceive += {
             logger.info { "Received: $it" }
         }
 

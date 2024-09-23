@@ -1,4 +1,4 @@
-package com.pkg_dot_zip.client
+package com.pkg_dot_zip.lib.events
 
 import com.pkg_dot_zip.lib.ReceivedMessage
 

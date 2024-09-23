@@ -1,4 +1,4 @@
-package com.pkg_dot_zip.lib
+package com.pkg_dot_zip.lib.events
 
 class Event<T> {
     private val handlers = mutableListOf<T>()
