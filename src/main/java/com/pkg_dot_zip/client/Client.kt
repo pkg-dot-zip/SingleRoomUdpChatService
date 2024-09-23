@@ -17,24 +17,30 @@ class Client {
     private var username = "user${(100..999).random()}"
     private val events = ClientEvents()
 
-    private var sentMessages = mutableListOf<Int>()
+    private var sentMessages = ArrayList<Int>(3)
 
     @Volatile
     private var running = true
 
     private fun registerEvents() {
         logger.info { "Registering Events." }
-        events.onReceive += {
-            logger.info { "Received: $it" }
+
+        events.onReceive += { logger.info { "Received: $it" } } // Log.
+
+        // Fire proper event dependent on message type.
+        events.onReceive += { msg: ReceivedMessage ->
+            when {
+                msg.isCommand() -> events.onReceiveCommand.invoke { it.onReceiveMessage(msg) }
+                msg.isAcknowledgement() -> events.onReceiveAcknowledgement.invoke { it.onReceiveMessage(msg) }
+                msg.isMessage() -> events.onReceiveTextMessage.invoke { it.onReceiveMessage(msg) }
+            }
         }
 
-        events.onReceive += OnReceiveMessage(::println) // Regular console output so that it looks normal to the user.
+        events.onReceiveTextMessage += OnReceiveMessage(::println) // Regular console output so that it looks normal to the user.
 
         // Handle acknowledgement.
-        events.onReceive += onReceive@{
-            if (!it.isAcknowledgement()) return@onReceive
-
-            // This means a packet was dropped! We sent 2 messages before any of them was acknowledged by the server.
+        events.onReceiveAcknowledgement += {
+            // This means a packet was dropped; we sent 2 messages before any of them was acknowledged by the server.
             if (sentMessages.size >= 2) {
                 logger.warn { "A packet was dropped containing message with id ${sentMessages.first()}" }
                 sentMessages.subList(0, sentMessages.size - 1).clear() // Remove all but the last entry.
