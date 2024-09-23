@@ -1,11 +1,12 @@
 package com.pkg_dot_zip.server
 
 import com.pkg_dot_zip.lib.Config
+import com.pkg_dot_zip.lib.Status
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
 
-data class ClientInfo(val address: InetAddress, val port: Int, var status: String)
+data class ClientInfo(val address: InetAddress, val port: Int, var status: Status)
 
 class Server {
     private val clients = mutableMapOf<String, ClientInfo>()
@@ -24,7 +25,7 @@ class Server {
             println("Received message from $clientId: $message")
 
             if (!clients.containsKey(clientId)) {
-                clients[clientId] = ClientInfo(packet.address, packet.port, "Available")
+                clients[clientId] = ClientInfo(packet.address, packet.port, Status.AVAILABLE)
             }
 
             if (message.startsWith("/")) {
@@ -38,20 +39,20 @@ class Server {
     private fun handleCommand(command: String, clientId: String) {
         when (command) {
             "/offline" -> {
-                clients[clientId]?.status = "Offline"
+                clients[clientId]?.status = Status.OFFLINE
                 println("$clientId is now offline")
                 clients.remove(clientId)
                 broadcastMessage("$clientId went offline", clientId)
             }
 
             "/available" -> {
-                clients[clientId]?.status = "Available"
+                clients[clientId]?.status = Status.AVAILABLE
                 println("$clientId is now available")
                 broadcastMessage("$clientId is available", clientId)
             }
 
             "/busy" -> {
-                clients[clientId]?.status = "Busy"
+                clients[clientId]?.status = Status.BUSY
                 println("$clientId is now busy")
                 broadcastMessage("$clientId is busy", clientId)
             }
@@ -64,7 +65,7 @@ class Server {
 
     private fun broadcastMessage(message: String, senderId: String) {
         for ((id, client) in clients) {
-            if (id != senderId && client.status != "Offline") {
+            if (id != senderId && client.status != Status.OFFLINE) {
                 sendMessage(message, client.address, client.port)
             }
         }
