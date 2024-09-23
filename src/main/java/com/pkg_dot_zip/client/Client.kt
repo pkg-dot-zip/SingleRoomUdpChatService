@@ -1,12 +1,13 @@
-package com.pkg_dot_zip
+package com.pkg_dot_zip.client
 
+import com.pkg_dot_zip.lib.Config
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import kotlin.concurrent.thread
 
 class Client {
     private val socket = DatagramSocket()
-    private val buffer = ByteArray(Server.BUFFER_SIZE)
+    private val buffer = ByteArray(Config.BUFFER_SIZE)
 
     @Volatile
     private var running = true
@@ -45,7 +46,7 @@ class Client {
 
     private fun sendMessage(message: String) {
         val data = message.toByteArray()
-        val packet = DatagramPacket(data, data.size, Server.ADDRESS, Server.PORT)
+        val packet = DatagramPacket(data, data.size, Config.ADDRESS, Config.PORT)
         socket.send(packet)
         println("Sent: $message")
 
