@@ -25,8 +25,7 @@ class Server {
             socket.receive(packet)
             val message = ReceivedMessage(packet)
 
-            // Extract client's info (IP and port)
-            val clientId = "${packet.address}:${packet.port}" // TODO: Retrieve username somehow.
+            val clientId = "${packet.address}:${packet.port}" // NOTE: We identify users by address, not username, although that is what the user sees.
             logger.info { "Received message from $clientId: $message" }
 
             if (!clients.containsKey(clientId)) {

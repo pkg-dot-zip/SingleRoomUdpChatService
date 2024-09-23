@@ -13,7 +13,7 @@ private val logger = KotlinLogging.logger {}
 class Client {
     private val socket = DatagramSocket()
     private val buffer = ByteArray(Config.BUFFER_SIZE)
-    private var username = "user"
+    private var username = "user${(100..999).random()}"
 
     @Volatile
     private var running = true
@@ -42,6 +42,8 @@ class Client {
             if (input == "/offline") {
                 sendMessage(input)
                 running = false
+            } else if (input.startsWith("/username")) { // NOTE: We do this locally, since server identifies users by address.
+                username = input.substringAfter("/username").trim()
             } else {
                 sendMessage(input)
             }
