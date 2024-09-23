@@ -8,8 +8,14 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
+import kotlin.time.Duration.Companion.minutes
 
-data class ClientInfo(val address: InetAddress, val port: Int, var status: Status)
+data class ClientInfo(
+    val address: InetAddress,
+    val port: Int,
+    var status: Status,
+    var lastMessageTime: Long = System.currentTimeMillis()
+)
 
 private val logger = KotlinLogging.logger {}
 
@@ -45,6 +51,8 @@ class Server {
                 )
             )
         }
+
+        events.onReceive += { checkIfUsersOffline() }
 
         // Fire proper event dependent on message type.
         events.onReceive += { msg: ReceivedMessage ->
@@ -109,15 +117,15 @@ class Server {
         }
     }
 
-    // TODO: Handle.
-
-    /**
-     * Pings all clients to see if they are still online. According to the assignments this needs to be checked on receiving any message on this server.
-     */
     private fun checkIfUsersOffline() {
-        for ((_, client) in clients) {
-            if (client.status != Status.OFFLINE) {
-                socket.send(PacketCreator.createPacket("PING", client.address, client.port))
+        val currentTime = System.currentTimeMillis()
+        val timeout = 5.minutes.inWholeMilliseconds
+
+        for ((clientId, clientInfo) in clients) {
+            if (clientInfo.status != Status.OFFLINE && currentTime - clientInfo.lastMessageTime > timeout) {
+                logger.info { "$clientId has been set offline due to inactivity." }
+                clientInfo.status = Status.OFFLINE
+                broadcastMessage("$clientId went offline due to inactivity", clientId)
             }
         }
     }
