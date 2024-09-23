@@ -42,7 +42,7 @@ class Server {
     }
 
     private fun handleCommand(command: ReceivedMessage, clientId: String) {
-        return handleCommand(command.getString(), clientId)
+        return handleCommand(command.getContent(), clientId)
     }
 
     private fun handleCommand(command: String, clientId: String) {

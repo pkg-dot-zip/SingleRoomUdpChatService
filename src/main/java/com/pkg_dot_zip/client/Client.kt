@@ -13,6 +13,7 @@ private val logger = KotlinLogging.logger {}
 class Client {
     private val socket = DatagramSocket()
     private val buffer = ByteArray(Config.BUFFER_SIZE)
+    private var username = "user"
 
     @Volatile
     private var running = true
@@ -49,10 +50,10 @@ class Client {
         socket.close()
     }
 
-    private fun sendMessage(message: String) {
-        val packet = PacketCreator.createPacket(message, Config.ADDRESS, Config.PORT)
+    private fun sendMessage(content: String, username: String = this.username) {
+        val packet = PacketCreator.createMessagePacket(username, content, Config.ADDRESS, Config.PORT)
         socket.send(packet)
-        logger.info { "Sent: $message" }
+        logger.info { "Sent: $content" }
 
         // TODO: What if message gets lost? :(
     }

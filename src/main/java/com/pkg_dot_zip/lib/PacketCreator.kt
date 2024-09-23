@@ -4,6 +4,15 @@ import java.net.DatagramPacket
 import java.net.InetAddress
 
 object PacketCreator {
+    fun createMessagePacket(
+        usernameOfSender: String,
+        content: String,
+        address: InetAddress,
+        port: Int
+    ): DatagramPacket {
+        return createPacket("$usernameOfSender: $content", address, port)
+    }
+
     fun createPacket(message: String, address: InetAddress, port: Int): DatagramPacket {
         return createPacket(message.toByteArray(), address, port)
     }
