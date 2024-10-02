@@ -28,7 +28,12 @@ class ReceivedMessage(val packet: DatagramPacket) {
     }
     fun getUsername(): String = getString().substringBefore(":").substringAfter(";").trim()
     fun getContent(): String = getString().substringAfter(":").trim()
-    private fun getString(): String = String(packet.data, 0, packet.length).trim()
+    fun getString(): String = getCompleteString().split(PacketCreator.separationString)[1]
+    fun getHash(): String = getCompleteString().split(PacketCreator.separationString)[0]
+
+    private fun getCompleteString() : String {
+        return String(packet.data, 0, packet.length).trim()
+    }
 
     override fun toString(): String = getString()
 }

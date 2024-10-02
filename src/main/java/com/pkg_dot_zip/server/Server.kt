@@ -3,6 +3,7 @@ package com.pkg_dot_zip.server
 import com.pkg_dot_zip.lib.Config
 import com.pkg_dot_zip.lib.PacketCreator
 import com.pkg_dot_zip.lib.ReceivedMessage
+import com.pkg_dot_zip.lib.cia.Hasher
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.DatagramPacket
 import java.net.DatagramSocket
@@ -53,6 +54,9 @@ class Server {
                 msg.isMessage() -> events.onReceiveTextMessage.invoke { it.onReceiveMessage(msg) }
             }
         }
+
+        // Check hash.
+        events.onReceive += { detectIfMessageModified(it) }
 
         events.onReceiveCommand += ::handleCommand
         events.onReceiveTextMessage += ::broadcastMessage
@@ -119,6 +123,17 @@ class Server {
                 broadcastMessage("$clientId went offline due to inactivity", clientId)
             }
         }
+    }
+
+    private fun detectIfMessageModified(msg: ReceivedMessage) {
+        val originalHash = msg.getHash()
+        val foundHash = Hasher().getHashedHexString(msg.getString())
+
+        logger.info { "Original hash = $originalHash, foundHash = $foundHash" }
+
+        if (foundHash == originalHash) return // Do nothing if correct.
+
+        logger.warn { "Message was modified! 😢" }
     }
 }
 
