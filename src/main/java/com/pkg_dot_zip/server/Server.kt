@@ -4,6 +4,7 @@ import com.pkg_dot_zip.lib.Config
 import com.pkg_dot_zip.lib.PacketCreator
 import com.pkg_dot_zip.lib.ReceivedMessage
 import com.pkg_dot_zip.lib.cia.Hasher
+import com.pkg_dot_zip.lib.cia.Keys
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.DatagramPacket
 import java.net.DatagramSocket
@@ -16,6 +17,7 @@ class Server {
     private val socket = DatagramSocket(Config.PORT)
     private val buffer = ByteArray(Config.BUFFER_SIZE)
 
+    private val keys = Keys()
     private val events = ServerEvents()
 
     private fun registerEvents() {
@@ -37,6 +39,7 @@ class Server {
         events.onReceive += { message: ReceivedMessage ->
             socket.send(
                 PacketCreator.createAcknowledgementPacket(
+                    keys.public,
                     message.getID(),
                     message.getSenderAddress(),
                     message.getSenderPort()
@@ -68,7 +71,7 @@ class Server {
         while (true) {
             val packet = DatagramPacket(buffer, buffer.size)
             socket.receive(packet)
-            events.onReceive.invoke { it.onReceiveMessage(ReceivedMessage(packet)) }
+            events.onReceive.invoke { it.onReceiveMessage(ReceivedMessage(packet, keys.private)) }
         }
     }
 
@@ -107,7 +110,7 @@ class Server {
     private fun broadcastMessage(message: String, senderId: String) {
         for ((id, client) in clients) {
             if (id != senderId && client.status != Status.OFFLINE) {
-                socket.send(PacketCreator.createPacket(message, client.address, client.port))
+                socket.send(PacketCreator.createPacket(keys.public, message, client.address, client.port))
             }
         }
     }

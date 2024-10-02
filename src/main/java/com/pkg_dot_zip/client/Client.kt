@@ -3,6 +3,7 @@ package com.pkg_dot_zip.client
 import com.pkg_dot_zip.lib.Config
 import com.pkg_dot_zip.lib.PacketCreator
 import com.pkg_dot_zip.lib.ReceivedMessage
+import com.pkg_dot_zip.lib.cia.Keys
 import com.pkg_dot_zip.lib.events.OnReceiveMessage
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.DatagramPacket
@@ -15,6 +16,8 @@ class Client {
     private val socket = DatagramSocket()
     private val buffer = ByteArray(Config.BUFFER_SIZE)
     private var username = "user${(100..999).random()}"
+
+    private val keys = Keys()
     private val events = ClientEvents()
 
     private var sentMessages = ArrayList<Int>(3)
@@ -60,7 +63,7 @@ class Client {
                 try {
                     val packet = DatagramPacket(buffer, buffer.size)
                     socket.receive(packet)
-                    events.onReceive.invoke { it.onReceiveMessage(ReceivedMessage(packet)) }
+                    events.onReceive.invoke { it.onReceiveMessage(ReceivedMessage(packet, keys.private)) }
                 } catch (e: Exception) {
                     if (running) logger.error(e) { "Error receiving message: ${e.message}" }
                 }
@@ -96,7 +99,7 @@ class Client {
 
     private fun sendMessage(content: String, username: String = this.username) {
         val id = (0..Integer.MAX_VALUE).random()
-        val packet = PacketCreator.createMessagePacket(id, username, content, Config.ADDRESS, Config.PORT)
+        val packet = PacketCreator.createMessagePacket(keys.public, id, username, content, Config.ADDRESS, Config.PORT)
         socket.send(packet)
         logger.info { "Sent: $content" }
 
