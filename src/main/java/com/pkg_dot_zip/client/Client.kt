@@ -58,7 +58,7 @@ class Client {
 
         events.onReceivePublicKey += {
             // Only do once.
-            if (serverPublicKey.isNotEmpty()) {
+            if (serverPublicKey.isEmpty()) {
                 logger.info { "Received public key ${it.getPublicKey().getString()}" }
                 serverPublicKey = it.getPublicKey() }
             }

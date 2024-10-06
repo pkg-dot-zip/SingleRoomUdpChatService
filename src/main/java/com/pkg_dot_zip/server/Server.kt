@@ -45,8 +45,10 @@ class Server {
                     message.getSenderPort(),
                 )
             )
+        }
 
-            // Send public key.
+        // Send public key.
+        events.onReceive += { message: ReceivedMessage ->
             logger.info { "Sending server's public key: ${keypair.public.getString()}" }
             socket.send(
                 PacketCreator.createKeyPacket(
