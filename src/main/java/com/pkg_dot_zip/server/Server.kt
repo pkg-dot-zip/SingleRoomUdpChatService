@@ -3,7 +3,9 @@ package com.pkg_dot_zip.server
 import com.pkg_dot_zip.lib.Config
 import com.pkg_dot_zip.lib.PacketCreator
 import com.pkg_dot_zip.lib.ReceivedMessage
+import com.pkg_dot_zip.lib.cia.Encryptor
 import com.pkg_dot_zip.lib.cia.Hasher
+import com.pkg_dot_zip.lib.cia.KeyExtensions.getString
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.DatagramPacket
 import java.net.DatagramSocket
@@ -17,6 +19,7 @@ class Server {
     private val buffer = ByteArray(Config.BUFFER_SIZE)
 
     private val events = ServerEvents()
+    private val keypair = Encryptor.generateKeyPair()
 
     private fun registerEvents() {
         logger.info { "Registering Events." }
@@ -39,7 +42,17 @@ class Server {
                 PacketCreator.createAcknowledgementPacket(
                     message.getID(),
                     message.getSenderAddress(),
-                    message.getSenderPort()
+                    message.getSenderPort(),
+                )
+            )
+
+            // Send public key.
+            logger.info { "Sending server's public key: ${keypair.public.getString()}" }
+            socket.send(
+                PacketCreator.createKeyPacket(
+                    keypair.public.encoded,
+                    message.getSenderAddress(),
+                    message.getSenderPort(),
                 )
             )
         }

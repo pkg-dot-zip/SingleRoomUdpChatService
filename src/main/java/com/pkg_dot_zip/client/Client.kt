@@ -3,6 +3,7 @@ package com.pkg_dot_zip.client
 import com.pkg_dot_zip.lib.Config
 import com.pkg_dot_zip.lib.PacketCreator
 import com.pkg_dot_zip.lib.ReceivedMessage
+import com.pkg_dot_zip.lib.cia.KeyExtensions.getString
 import com.pkg_dot_zip.lib.events.OnReceiveMessage
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.DatagramPacket
@@ -19,6 +20,8 @@ class Client {
 
     private var sentMessages = ArrayList<Int>(3)
 
+    private var serverPublicKey: ByteArray = ByteArray(0)
+
     @Volatile
     private var running = true
 
@@ -33,6 +36,7 @@ class Client {
                 msg.isCommand() -> events.onReceiveCommand.invoke { it.onReceiveMessage(msg) }
                 msg.isAcknowledgement() -> events.onReceiveAcknowledgement.invoke { it.onReceiveMessage(msg) }
                 msg.isMessage() -> events.onReceiveTextMessage.invoke { it.onReceiveMessage(msg) }
+                msg.isPublicKey() -> events.onReceivePublicKey.invoke { it.onReceiveMessage(msg) }
             }
         }
 
@@ -51,6 +55,13 @@ class Client {
                 sentMessages.removeFirst()
             }
         }
+
+        events.onReceivePublicKey += {
+            // Only do once.
+            if (serverPublicKey.isNotEmpty()) {
+                logger.info { "Received public key ${it.getPublicKey().getString()}" }
+                serverPublicKey = it.getPublicKey() }
+            }
     }
 
     // Thread to listen for incoming messages.
@@ -96,7 +107,7 @@ class Client {
 
     private fun sendMessage(content: String, username: String = this.username) {
         val id = (0..Integer.MAX_VALUE).random()
-        val packet = PacketCreator.createMessagePacket(id, username, content, Config.ADDRESS, Config.PORT)
+        val packet = PacketCreator.createMessagePacket(id, username, content, Config.ADDRESS, Config.PORT, serverPublicKey)
         socket.send(packet)
         logger.info { "Sent: $content" }
 

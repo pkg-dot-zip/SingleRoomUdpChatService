@@ -9,4 +9,6 @@ class ServerEvents {
     val onReceiveTextMessage = Event<OnReceiveMessage>()
     val onReceiveAcknowledgement = Event<OnReceiveMessage>()
     val onReceiveCommand = Event<OnReceiveMessage>()
+
+    val onReceivePublicKey = Event<OnReceiveMessage>()
 }

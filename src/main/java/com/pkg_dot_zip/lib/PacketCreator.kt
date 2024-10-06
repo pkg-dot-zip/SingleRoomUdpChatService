@@ -1,5 +1,6 @@
 package com.pkg_dot_zip.lib
 
+import com.pkg_dot_zip.lib.cia.Encryptor
 import com.pkg_dot_zip.lib.cia.Hasher
 import java.net.DatagramPacket
 import java.net.InetAddress
@@ -12,23 +13,32 @@ object PacketCreator {
         usernameOfSender: String,
         content: String,
         address: InetAddress,
-        port: Int
+        port: Int,
+        publicKey: ByteArray? = null
     ): DatagramPacket {
-        return createPacket("$packetID;$usernameOfSender: $content", address, port)
+        return createPacket("$packetID;$usernameOfSender: $content", address, port, publicKey)
     }
 
-    fun createAcknowledgementPacket(packetID: Int, address: InetAddress, port: Int): DatagramPacket {
-        return createPacket("ACK=$packetID", address, port)
+    fun createAcknowledgementPacket(packetID: Int, address: InetAddress, port: Int, publicKey: ByteArray? = null): DatagramPacket {
+        return createPacket("ACK=$packetID", address, port, publicKey)
     }
 
-    fun createPacket(message: String, address: InetAddress, port: Int): DatagramPacket {
+    fun createPacket(message: String, address: InetAddress, port: Int, publicKey: ByteArray? = null): DatagramPacket {
         val hash = Hasher().getHashedHexString(message)
         val fullMessage = hash + separationString + message
 
-        return createPacket(fullMessage.toByteArray(), address, port)
+        return createPacket(fullMessage.toByteArray(), address, port, publicKey)
     }
 
-    private fun createPacket(data: ByteArray, address: InetAddress, port: Int): DatagramPacket {
-        return DatagramPacket(data, data.size, address, port)
+    fun createKeyPacket(data: ByteArray, address: InetAddress, port: Int, publicKey: ByteArray? = null): DatagramPacket {
+        return createPacket(data, address, port, publicKey) // NOTE: No hash.
+    }
+
+    private fun createPacket(data: ByteArray, address: InetAddress, port: Int, publicKey: ByteArray? = null): DatagramPacket {
+        var dataToSend = data
+        if (publicKey != null && publicKey.size > 1) {
+            dataToSend = Encryptor.encrypt(publicKey, data)
+        }
+        return DatagramPacket(dataToSend, dataToSend.size, address, port)
     }
 }
